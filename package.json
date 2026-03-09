@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "description": "New Testament Study Companion — beautiful biblical context and background for every book",
   "type": "module",
-  "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
@@ -11,9 +10,8 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
-    "@libsql/client": "^0.17.0",
-    "bcryptjs": "^3.0.3",
-    "cookie": "^1.0.2"
+    "@libsql/client": "^0.14.0",
+    "bcryptjs": "^3.0.3"
   },
   "devDependencies": {
     "better-sqlite3": "^12.6.2",
