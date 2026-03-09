@@ -3,6 +3,9 @@ import express from "express";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
 import { serialize, parse } from "cookie";
+import { randomBytes, createHmac } from "crypto";
+import bcrypt from "bcryptjs";
+import db, { findUserByUsername, getBookmark, upsertBookmark } from "./db.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -11,44 +14,105 @@ const app = express();
 app.use(express.json());
 app.use(express.static(__dirname));
 
-const APP_PASSWORD = process.env.APP_PASSWORD || "nowebs4U12345!";
+const SESSION_SECRET = process.env.SESSION_SECRET || randomBytes(32).toString("hex");
+
+function signToken(userId) {
+  const payload = Buffer.from(`${userId}:${Date.now()}`).toString("base64");
+  const sig = createHmac("sha256", SESSION_SECRET).update(payload).digest("hex");
+  return `${payload}.${sig}`;
+}
+
+function verifyToken(token) {
+  if (!token || !token.includes(".")) return null;
+  const [payload, sig] = token.split(".");
+  const expected = createHmac("sha256", SESSION_SECRET).update(payload).digest("hex");
+  if (sig !== expected) return null;
+  const decoded = Buffer.from(payload, "base64").toString();
+  const userId = parseInt(decoded.split(":")[0]);
+  return isNaN(userId) ? null : userId;
+}
 
 // ─── Auth endpoint ───
 app.post("/api/auth", (req, res) => {
-  const { password } = req.body;
+  const { username, password } = req.body;
 
-  if (password === APP_PASSWORD) {
-    const authCookie = serialize("auth_token", "authenticated", {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      path: "/",
-      maxAge: 60 * 60 * 24 * 30,
-    });
-
-    const flagCookie = serialize("logged_in", "1", {
-      httpOnly: false,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      path: "/",
-      maxAge: 60 * 60 * 24 * 30,
-    });
-
-    res.setHeader("Set-Cookie", [authCookie, flagCookie]);
-    return res.json({ success: true });
+  if (!username || !password) {
+    return res.status(400).json({ error: "Username and password required" });
   }
 
-  return res.status(401).json({ error: "Invalid password" });
+  const user = findUserByUsername(username);
+  if (!user || !bcrypt.compareSync(password, user.password_hash)) {
+    return res.status(401).json({ error: "Invalid credentials" });
+  }
+
+  const token = signToken(user.id);
+
+  const authCookie = serialize("auth_token", token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 30,
+  });
+
+  const flagCookie = serialize("logged_in", "1", {
+    httpOnly: false,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 30,
+  });
+
+  res.setHeader("Set-Cookie", [authCookie, flagCookie]);
+  return res.json({
+    success: true,
+    user: { id: user.id, username: user.username, displayName: user.display_name },
+  });
 });
 
-// ─── Auth middleware for API routes ───
+// ─── Auth middleware ───
 function requireAuth(req, res, next) {
   const cookies = parse(req.headers.cookie || "");
-  if (cookies.auth_token !== "authenticated") {
+  const userId = verifyToken(cookies.auth_token);
+  if (!userId) {
     return res.status(401).json({ error: "Not authenticated" });
   }
+  req.userId = userId;
   next();
 }
+
+// ─── Current user + bookmark ───
+app.get("/api/me", requireAuth, (req, res) => {
+  const user = db.prepare("SELECT id, username, display_name FROM users WHERE id = ?").get(req.userId);
+  if (!user) return res.status(401).json({ error: "User not found" });
+
+  const bookmark = getBookmark(req.userId);
+  res.json({
+    user: { id: user.id, username: user.username, displayName: user.display_name },
+    bookmark: bookmark
+      ? { bookId: bookmark.book_id, chapter: bookmark.chapter, verse: bookmark.verse, notes: bookmark.notes, updatedAt: bookmark.updated_at }
+      : null,
+  });
+});
+
+// ─── Bookmark endpoints ───
+app.get("/api/bookmark", requireAuth, (req, res) => {
+  const bookmark = getBookmark(req.userId);
+  res.json(
+    bookmark
+      ? { bookId: bookmark.book_id, chapter: bookmark.chapter, verse: bookmark.verse, notes: bookmark.notes, updatedAt: bookmark.updated_at }
+      : null
+  );
+});
+
+app.put("/api/bookmark", requireAuth, (req, res) => {
+  const { bookId, chapter, verse, notes } = req.body;
+  if (!bookId || !chapter) {
+    return res.status(400).json({ error: "bookId and chapter are required" });
+  }
+  upsertBookmark(req.userId, bookId, chapter, verse || 1, notes || "");
+  res.json({ success: true });
+});
 
 // ─── Scholar AI endpoint ───
 app.post("/api/ask", requireAuth, async (req, res) => {

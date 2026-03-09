@@ -8,6 +8,8 @@
   // ─── STATE ───
   let currentView = "books";
   let currentBook = null;
+  let currentUser = null;
+  let currentBookmark = null;
 
   // ─── DOM REFS ───
   const $ = (sel) => document.querySelector(sel);
@@ -16,6 +18,7 @@
   // ─── AUTH CHECK ───
   const loginScreen = $("#loginScreen");
   const loginForm = $("#loginForm");
+  const loginUsername = $("#loginUsername");
   const loginPassword = $("#loginPassword");
   const loginError = $("#loginError");
 
@@ -25,6 +28,7 @@
 
   if (isLoggedIn()) {
     loginScreen.classList.add("hidden");
+    loadUserData();
   }
 
   loginForm.addEventListener("submit", async (e) => {
@@ -35,12 +39,15 @@
       const res = await fetch("/api/auth", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password: loginPassword.value }),
+        body: JSON.stringify({ username: loginUsername.value, password: loginPassword.value }),
       });
 
       if (res.ok) {
+        const data = await res.json();
+        currentUser = data.user;
         loginScreen.classList.add("leaving");
         setTimeout(() => loginScreen.classList.add("hidden"), 600);
+        loadUserData();
       } else {
         loginError.classList.remove("hidden");
         loginPassword.value = "";
@@ -1174,6 +1181,121 @@
       }
     });
   }
+
+  // ─── USER DATA & BOOKMARK ───
+  async function loadUserData() {
+    try {
+      const res = await fetch("/api/me");
+      if (!res.ok) return;
+      const data = await res.json();
+      currentUser = data.user;
+      currentBookmark = data.bookmark;
+      initBookmarkPanel();
+      updateBookmarkUI();
+    } catch { /* silent */ }
+  }
+
+  function initBookmarkPanel() {
+    const bookSelect = $("#bookmarkBook");
+    if (bookSelect.children.length > 0) return; // already initialized
+    NT_BOOKS.forEach((book) => {
+      const opt = document.createElement("option");
+      opt.value = book.id;
+      opt.textContent = book.name;
+      bookSelect.appendChild(opt);
+    });
+
+    // Update max chapter when book changes
+    bookSelect.addEventListener("change", () => {
+      const book = NT_BOOKS.find((b) => b.id === bookSelect.value);
+      if (book) {
+        $("#bookmarkChapter").max = book.chapters;
+      }
+    });
+
+    // Set initial max
+    const firstBook = NT_BOOKS[0];
+    if (firstBook) $("#bookmarkChapter").max = firstBook.chapters;
+  }
+
+  function updateBookmarkUI() {
+    const dot = $("#bookmarkDot");
+    const current = $("#bookmarkCurrent");
+
+    if (currentBookmark) {
+      dot.classList.remove("hidden");
+      const book = NT_BOOKS.find((b) => b.id === currentBookmark.bookId);
+      const bookName = book ? book.name : currentBookmark.bookId;
+      const ref = `${bookName} ${currentBookmark.chapter}:${currentBookmark.verse}`;
+      const raw = currentBookmark.updatedAt;
+      const date = new Date(raw.includes("T") ? raw : raw + "Z").toLocaleDateString();
+      current.innerHTML = `
+        <div class="bookmark-current-ref">${ref}</div>
+        ${currentBookmark.notes ? `<div class="bookmark-current-notes">${escapeHtml(currentBookmark.notes)}</div>` : ""}
+        <div class="bookmark-current-date">Saved ${date}</div>
+      `;
+
+      // Pre-fill form
+      $("#bookmarkBook").value = currentBookmark.bookId;
+      $("#bookmarkChapter").value = currentBookmark.chapter;
+      $("#bookmarkVerse").value = currentBookmark.verse;
+      $("#bookmarkNotes").value = currentBookmark.notes || "";
+      const bookData = NT_BOOKS.find((b) => b.id === currentBookmark.bookId);
+      if (bookData) $("#bookmarkChapter").max = bookData.chapters;
+    } else {
+      dot.classList.add("hidden");
+      current.innerHTML = `<div class="bookmark-current-empty">No bookmark set yet</div>`;
+    }
+  }
+
+  async function saveBookmark() {
+    const bookId = $("#bookmarkBook").value;
+    const chapter = parseInt($("#bookmarkChapter").value) || 1;
+    const verse = parseInt($("#bookmarkVerse").value) || 1;
+    const notes = $("#bookmarkNotes").value.trim();
+
+    if (!bookId || !chapter) return;
+
+    try {
+      const res = await fetch("/api/bookmark", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bookId, chapter, verse, notes }),
+      });
+      if (res.ok) {
+        currentBookmark = { bookId, chapter, verse, notes, updatedAt: new Date().toISOString() };
+        updateBookmarkUI();
+        // Flash saved confirmation
+        const btn = $("#bookmarkSave");
+        btn.textContent = "Saved!";
+        btn.classList.add("saved");
+        setTimeout(() => {
+          btn.textContent = "Save Bookmark";
+          btn.classList.remove("saved");
+        }, 1500);
+      }
+    } catch { /* silent */ }
+  }
+
+  // Bookmark panel toggle
+  $("#bookmarkBtn").addEventListener("click", () => {
+    $("#bookmarkPanel").classList.toggle("hidden");
+  });
+
+  $("#bookmarkPanelClose").addEventListener("click", () => {
+    $("#bookmarkPanel").classList.add("hidden");
+  });
+
+  $("#bookmarkSave").addEventListener("click", saveBookmark);
+
+  // Close panel on outside click
+  document.addEventListener("click", (e) => {
+    const panel = $("#bookmarkPanel");
+    const btn = $("#bookmarkBtn");
+    if (!panel.classList.contains("hidden") && !panel.contains(e.target) && !btn.contains(e.target)) {
+      panel.classList.add("hidden");
+    }
+  });
 
   // ─── START ───
   init();

@@ -17,11 +17,12 @@
     <div class="login-container">
       <div class="landing-ornament top">✦</div>
       <h1 class="login-title">The Living Word</h1>
-      <p class="login-subtitle">Enter password to continue</p>
+      <p class="login-subtitle">Sign in to continue</p>
       <form id="loginForm" class="login-form">
+        <input type="text" id="loginUsername" class="login-input" placeholder="Username" autocomplete="username" required>
         <input type="password" id="loginPassword" class="login-input" placeholder="Password" autocomplete="current-password" required>
         <button type="submit" class="login-btn">Enter</button>
-        <p id="loginError" class="login-error hidden">Incorrect password. Please try again.</p>
+        <p id="loginError" class="login-error hidden">Invalid credentials. Please try again.</p>
       </form>
       <div class="landing-ornament bottom">✦</div>
     </div>
@@ -65,12 +66,37 @@
         <button class="nav-tab" data-view="scholar">Ask the Scholar</button>
       </div>
       <div class="nav-right">
+        <button id="bookmarkBtn" class="nav-bookmark-btn" title="Listening Bookmark">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+          <span class="bookmark-dot hidden" id="bookmarkDot"></span>
+        </button>
         <div class="search-container">
           <input type="text" id="searchInput" class="search-input" placeholder="Search books...">
           <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
         </div>
       </div>
     </nav>
+
+    <!-- ═══════════ BOOKMARK PANEL ═══════════ -->
+    <div id="bookmarkPanel" class="bookmark-panel hidden">
+      <div class="bookmark-panel-header">
+        <h3>Listening Bookmark</h3>
+        <button id="bookmarkPanelClose" class="bookmark-panel-close">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="bookmark-current" id="bookmarkCurrent"></div>
+      <div class="bookmark-form">
+        <select id="bookmarkBook" class="bookmark-select"></select>
+        <div class="bookmark-row">
+          <input type="number" id="bookmarkChapter" class="bookmark-num" placeholder="Chapter" min="1">
+          <span class="bookmark-sep">:</span>
+          <input type="number" id="bookmarkVerse" class="bookmark-num" placeholder="Verse" min="1">
+        </div>
+        <textarea id="bookmarkNotes" class="bookmark-notes" placeholder="Quick note (optional)" rows="2"></textarea>
+        <button id="bookmarkSave" class="bookmark-save-btn">Save Bookmark</button>
+      </div>
+    </div>
 
     <!-- ═══════════ BOOKS VIEW ═══════════ -->
     <section id="booksView" class="view active">
