@@ -1,6 +1,5 @@
 {
   "rewrites": [
-    { "source": "/api/auth", "destination": "/api/auth" },
-    { "source": "/api/ask", "destination": "/api/ask" }
+    { "source": "/api/bible/:bookNum/:chapter", "destination": "/api/bible/[bookNum]/[chapter]" }
   ]
 }
