@@ -1,18 +1,18 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { parse } from 'cookie';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // Check authentication
-  const cookies = parse(req.headers.cookie || '');
-  if (cookies.auth_token !== 'authenticated') {
+  // Check authentication via cookie
+  const cookieHeader = req.headers.cookie || '';
+  const hasAuth = cookieHeader.split(';').some(c => c.trim().startsWith('auth_token=authenticated'));
+  if (!hasAuth) {
     return res.status(401).json({ error: 'Not authenticated' });
   }
 
-  const { question, bookContext } = req.body;
+  const { question, bookContext } = req.body || {};
 
   if (!question) {
     return res.status(400).json({ error: 'Question is required' });
