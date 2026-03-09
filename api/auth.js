@@ -1,38 +1,29 @@
 export default function handler(req, res) {
   try {
     if (req.method !== 'POST') {
-      res.setHeader('Content-Type', 'application/json');
-      res.status(405);
-      return res.end(JSON.stringify({ error: 'Method not allowed' }));
+      return res.status(405).json({ error: 'Method not allowed' });
     }
 
-    const { password } = req.body || {};
+    const body = req.body || {};
+    const password = body.password;
     const validPassword = process.env.APP_PASSWORD;
 
+    // Debug: log what we received
+    console.log('password received:', typeof password, password ? password.length : 'null');
+    console.log('validPassword:', typeof validPassword, validPassword ? validPassword.length : 'null');
+
     if (!password) {
-      res.setHeader('Content-Type', 'application/json');
-      res.status(400);
-      return res.end(JSON.stringify({ error: 'Password required' }));
+      return res.status(400).json({ error: 'Password required' });
     }
 
     if (password === validPassword) {
-      const maxAge = 60 * 60 * 24 * 30;
-      const authCookie = `auth_token=authenticated; HttpOnly; SameSite=Lax; Path=/; Max-Age=${maxAge}; Secure`;
-      const loginCookie = `logged_in=1; SameSite=Lax; Path=/; Max-Age=${maxAge}; Secure`;
-
-      res.setHeader('Set-Cookie', [authCookie, loginCookie]);
-      res.setHeader('Content-Type', 'application/json');
-      res.status(200);
-      return res.end(JSON.stringify({ success: true }));
+      // Test without cookies first
+      return res.status(200).json({ success: true, debug: 'matched' });
     }
 
-    res.setHeader('Content-Type', 'application/json');
-    res.status(401);
-    return res.end(JSON.stringify({ error: 'Invalid password' }));
+    return res.status(401).json({ error: 'Invalid password' });
   } catch (err) {
-    console.error('Auth error:', err);
-    res.setHeader('Content-Type', 'application/json');
-    res.status(500);
-    return res.end(JSON.stringify({ error: err.message }));
+    console.error('Auth error:', err.stack || err.message);
+    return res.status(500).json({ error: err.message, stack: err.stack });
   }
 }
