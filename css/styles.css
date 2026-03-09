@@ -1130,6 +1130,22 @@ a { color: inherit; text-decoration: none; }
   color: var(--clr-text-muted);
 }
 
+.timeline-item-audience,
+.timeline-item-purpose {
+  font-family: var(--ff-body);
+  font-size: 0.78rem;
+  color: var(--clr-text-muted);
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+.timeline-item-audience strong,
+.timeline-item-purpose strong {
+  color: var(--clr-text);
+  font-weight: 600;
+  margin-right: 2px;
+}
+
 .timeline-legend {
   display: flex;
   flex-wrap: wrap;

@@ -61,7 +61,7 @@
   const views = {
     books: $("#booksView"),
     timeline: $("#timelineView"),
-    map: $("#mapView"),
+
     scholar: $("#scholarView"),
   };
 
@@ -79,7 +79,6 @@
   function init() {
     renderBookGrids();
     renderTimeline();
-    renderMap();
     bindEvents();
   }
 
@@ -308,6 +307,8 @@
       html += `<div class="timeline-era-label">${era.label}</div>`;
 
       era.books.forEach((book) => {
+        // Brief purpose - take first sentence only
+        const briefPurpose = book.purpose.split(/\.\s/)[0] + '.';
         html += `
           <div class="timeline-item" data-category="${book.category}" data-book-id="${book.id}">
             <div class="timeline-item-header">
@@ -315,6 +316,8 @@
               <span class="timeline-item-date">${book.date}</span>
             </div>
             <div class="timeline-item-detail">${book.author} · ${book.writtenFrom}</div>
+            <div class="timeline-item-audience"><strong>To:</strong> ${book.audience}</div>
+            <div class="timeline-item-purpose"><strong>Why:</strong> ${briefPurpose}</div>
           </div>
         `;
       });
