@@ -1169,6 +1169,166 @@ a { color: inherit; text-decoration: none; }
 
 
 /* ═══════════════════════════════════════════════
+   CONNECTIONS GRAPH VIEW
+   ═══════════════════════════════════════════════ */
+
+.graph-container {
+  position: relative;
+  padding: 0 var(--sp-sm);
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+#graphCanvas {
+  width: 100%;
+  height: 500px;
+  border-radius: var(--radius-md);
+  background: var(--clr-surface);
+  border: 1px solid rgba(44,36,32,0.06);
+  box-shadow: var(--shadow-sm);
+}
+
+.graph-tooltip {
+  position: absolute;
+  background: var(--clr-surface);
+  border-radius: var(--radius-md);
+  padding: var(--sp-md);
+  box-shadow: var(--shadow-lg);
+  border: 1px solid rgba(44,36,32,0.08);
+  z-index: 10;
+  pointer-events: none;
+  max-width: 220px;
+  transition: opacity 0.15s;
+}
+.graph-tooltip.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.graph-tooltip-name {
+  font-family: var(--ff-heading);
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--clr-text);
+  margin-bottom: 2px;
+}
+
+.graph-tooltip-meta {
+  font-family: var(--ff-body);
+  font-size: 0.8rem;
+  color: var(--clr-text-muted);
+  margin-bottom: 4px;
+}
+
+.graph-tooltip-conn {
+  font-family: var(--ff-body);
+  font-size: 0.75rem;
+  color: var(--clr-text-soft);
+  line-height: 1.4;
+  padding-top: 4px;
+  border-top: 1px solid rgba(44,36,32,0.06);
+}
+
+.graph-legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--sp-md);
+  padding: var(--sp-lg) var(--sp-md);
+}
+
+/* ═══════════════════════════════════════════════
+   SCRIPTURE TAB
+   ═══════════════════════════════════════════════ */
+
+.scripture-note {
+  font-family: var(--ff-body);
+  font-size: 0.8rem;
+  color: var(--clr-text-muted);
+  margin-bottom: var(--sp-md);
+  font-style: italic;
+}
+
+.chapter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+  gap: 6px;
+  margin-bottom: var(--sp-xl);
+}
+
+.chapter-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  aspect-ratio: 1;
+  font-family: var(--ff-body);
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--clr-text-soft);
+  background: var(--clr-bg-warm);
+  border: 1px solid rgba(44,36,32,0.06);
+  border-radius: var(--radius-sm);
+  transition: all 0.2s var(--ease-out);
+  cursor: pointer;
+}
+.chapter-btn:hover {
+  background: rgba(114,47,55,0.08);
+  color: var(--clr-burgundy);
+  border-color: rgba(114,47,55,0.15);
+}
+.chapter-btn.active {
+  background: var(--clr-burgundy);
+  color: var(--clr-cream);
+  border-color: var(--clr-burgundy);
+}
+
+.scripture-text {
+  min-height: 60px;
+}
+
+.scripture-loading {
+  display: flex;
+  justify-content: center;
+  padding: var(--sp-xl) 0;
+}
+
+.scripture-error {
+  color: #c44;
+  font-size: 0.9rem;
+  text-align: center;
+  padding: var(--sp-lg);
+}
+
+.scripture-reference {
+  font-family: var(--ff-display);
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: var(--clr-burgundy);
+  letter-spacing: 0.03em;
+  margin-bottom: var(--sp-md);
+  padding-bottom: var(--sp-sm);
+  border-bottom: 1px solid rgba(44,36,32,0.06);
+}
+
+.scripture-verses {
+  font-family: var(--ff-heading);
+  font-size: 1.05rem;
+  line-height: 2;
+  color: var(--clr-text);
+}
+
+.verse-num {
+  font-family: var(--ff-body);
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--clr-burgundy);
+  vertical-align: super;
+  margin-right: 2px;
+  opacity: 0.7;
+}
+
+/* ═══════════════════════════════════════════════
    MAP VIEW
    ═══════════════════════════════════════════════ */
 
@@ -1496,6 +1656,13 @@ a { color: inherit; text-decoration: none; }
     width: 220px;
   }
 
+  #graphCanvas { height: 550px; }
+
+  .chapter-grid {
+    grid-template-columns: repeat(auto-fill, minmax(44px, 1fr));
+    gap: 8px;
+  }
+
   .timeline-axis { left: 32px; }
   .timeline-era { padding-left: 64px; }
   .timeline-era-label::before { left: -40px; }
@@ -1572,6 +1739,13 @@ a { color: inherit; text-decoration: none; }
   .search-input:focus,
   .search-input.expanded {
     width: 260px;
+  }
+
+  #graphCanvas { height: 650px; }
+
+  .chapter-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
   }
 }
 

@@ -61,7 +61,7 @@
       <div class="nav-center">
         <button class="nav-tab active" data-view="books">Books</button>
         <button class="nav-tab" data-view="timeline">Timeline</button>
-
+        <button class="nav-tab" data-view="connections">Connections</button>
         <button class="nav-tab" data-view="scholar">Ask the Scholar</button>
       </div>
       <div class="nav-right">
@@ -149,6 +149,25 @@
 
 
 
+    <!-- ═══════════ CONNECTIONS VIEW ═══════════ -->
+    <section id="connectionsView" class="view">
+      <div class="books-hero">
+        <h2 class="section-title">Book Connections</h2>
+        <p class="section-desc">See how the 27 books of the New Testament relate to one another. Click any book to explore it.</p>
+      </div>
+      <div class="graph-container">
+        <canvas id="graphCanvas"></canvas>
+        <div class="graph-tooltip hidden" id="graphTooltip"></div>
+      </div>
+      <div class="graph-legend">
+        <span class="legend-item"><span class="legend-dot" style="background:var(--clr-gospel)"></span> Gospels</span>
+        <span class="legend-item"><span class="legend-dot" style="background:var(--clr-history)"></span> History</span>
+        <span class="legend-item"><span class="legend-dot" style="background:var(--clr-pauline)"></span> Pauline Epistles</span>
+        <span class="legend-item"><span class="legend-dot" style="background:var(--clr-general)"></span> General Epistles</span>
+        <span class="legend-item"><span class="legend-dot" style="background:var(--clr-prophecy)"></span> Prophecy</span>
+      </div>
+    </section>
+
     <!-- ═══════════ SCHOLAR VIEW ═══════════ -->
     <section id="scholarView" class="view">
       <div class="scholar-container">
@@ -219,6 +238,7 @@
           <button class="detail-tab" data-tab="author">About the Author</button>
           <button class="detail-tab" data-tab="themes">Key Themes</button>
           <button class="detail-tab" data-tab="outline">Outline</button>
+          <button class="detail-tab" data-tab="scripture">Scripture</button>
         </div>
 
         <div class="detail-body">
@@ -227,6 +247,7 @@
           <div class="tab-content" id="tabAuthor"></div>
           <div class="tab-content" id="tabThemes"></div>
           <div class="tab-content" id="tabOutline"></div>
+          <div class="tab-content" id="tabScripture"></div>
         </div>
 
         <div class="detail-footer">

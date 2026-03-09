@@ -61,7 +61,7 @@
   const views = {
     books: $("#booksView"),
     timeline: $("#timelineView"),
-
+    connections: $("#connectionsView"),
     scholar: $("#scholarView"),
   };
 
@@ -101,6 +101,8 @@
     $$(".nav-tab").forEach((tab) => {
       tab.classList.toggle("active", tab.dataset.view === viewName);
     });
+    // Initialize graph on first view
+    if (viewName === "connections") initGraph();
     // Scroll to top
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -239,6 +241,9 @@
       </div>
     `;
 
+    // Scripture tab
+    renderScriptureTab(book);
+
     // Reset tabs
     $$(".detail-tab").forEach((t) => t.classList.remove("active"));
     $$(".tab-content").forEach((t) => t.classList.remove("active"));
@@ -334,6 +339,447 @@
         if (book) openBookDetail(book);
       });
     });
+  }
+
+  // ─── CONNECTIONS GRAPH ───
+  const graphCanvas = $("#graphCanvas");
+  const graphCtx = graphCanvas ? graphCanvas.getContext("2d") : null;
+  const graphTooltip = $("#graphTooltip");
+  let graphNodes = [];
+  let graphEdges = [];
+  let graphAnimId = null;
+  let graphDragging = null;
+  let graphHovered = null;
+  let graphReady = false;
+  let graphDragMoved = false;
+
+  const categoryColors = {
+    gospel: "#722F37",
+    history: "#2E5E4E",
+    pauline: "#3B4A8C",
+    general: "#7B5B3A",
+    prophecy: "#6B3A6B",
+  };
+
+  function initGraph() {
+    if (!graphCanvas || graphReady) return;
+    graphReady = true;
+
+    const nameToId = {};
+    NT_BOOKS.forEach((b) => (nameToId[b.name] = b.id));
+
+    // Build nodes
+    graphNodes = NT_BOOKS.map((book) => ({
+      id: book.id,
+      name: book.name,
+      category: book.category,
+      chapters: book.chapters,
+      radius: Math.max(14, Math.min(30, 10 + book.chapters * 0.5)),
+      x: 0,
+      y: 0,
+      vx: 0,
+      vy: 0,
+      book: book,
+    }));
+
+    // Build edges from connections
+    const edgeSet = new Set();
+    graphEdges = [];
+    NT_BOOKS.forEach((book) => {
+      (book.connections || []).forEach((connName) => {
+        const targetId = nameToId[connName];
+        if (!targetId) return;
+        const key = [book.id, targetId].sort().join("-");
+        if (edgeSet.has(key)) return;
+        edgeSet.add(key);
+        graphEdges.push({
+          source: graphNodes.find((n) => n.id === book.id),
+          target: graphNodes.find((n) => n.id === targetId),
+        });
+      });
+    });
+
+    resizeGraph();
+    window.addEventListener("resize", resizeGraph);
+    bindGraphEvents();
+  }
+
+  function resizeGraph() {
+    const container = graphCanvas.parentElement;
+    const dpr = window.devicePixelRatio || 1;
+    const w = container.clientWidth;
+    const h = container.clientHeight || 500;
+    graphCanvas.width = w * dpr;
+    graphCanvas.height = h * dpr;
+    graphCanvas.style.width = w + "px";
+    graphCanvas.style.height = h + "px";
+    graphCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    // Scatter nodes in a circle initially
+    const cx = w / 2;
+    const cy = h / 2;
+    const spread = Math.min(w, h) * 0.35;
+    graphNodes.forEach((node, i) => {
+      const angle = (i / graphNodes.length) * Math.PI * 2;
+      node.x = cx + Math.cos(angle) * spread + (Math.random() - 0.5) * 40;
+      node.y = cy + Math.sin(angle) * spread + (Math.random() - 0.5) * 40;
+      node.vx = 0;
+      node.vy = 0;
+    });
+
+    startGraphSimulation();
+  }
+
+  function startGraphSimulation() {
+    if (graphAnimId) cancelAnimationFrame(graphAnimId);
+    let iterations = 0;
+    const maxIterations = 300;
+
+    function tick() {
+      iterations++;
+      const w = graphCanvas.clientWidth;
+      const h = graphCanvas.clientHeight;
+      const cx = w / 2;
+      const cy = h / 2;
+      const damping = iterations < 100 ? 0.92 : 0.85;
+
+      // Repulsion between all pairs
+      for (let i = 0; i < graphNodes.length; i++) {
+        for (let j = i + 1; j < graphNodes.length; j++) {
+          const a = graphNodes[i];
+          const b = graphNodes[j];
+          let dx = a.x - b.x;
+          let dy = a.y - b.y;
+          let dist = Math.sqrt(dx * dx + dy * dy) || 1;
+          const force = 2000 / (dist * dist);
+          const fx = (dx / dist) * force;
+          const fy = (dy / dist) * force;
+          a.vx += fx;
+          a.vy += fy;
+          b.vx -= fx;
+          b.vy -= fy;
+        }
+      }
+
+      // Spring forces along edges
+      graphEdges.forEach((edge) => {
+        const dx = edge.target.x - edge.source.x;
+        const dy = edge.target.y - edge.source.y;
+        const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+        const targetDist = 100;
+        const force = (dist - targetDist) * 0.02;
+        const fx = (dx / dist) * force;
+        const fy = (dy / dist) * force;
+        edge.source.vx += fx;
+        edge.source.vy += fy;
+        edge.target.vx -= fx;
+        edge.target.vy -= fy;
+      });
+
+      // Centering force
+      graphNodes.forEach((node) => {
+        node.vx += (cx - node.x) * 0.003;
+        node.vy += (cy - node.y) * 0.003;
+      });
+
+      // Update positions
+      graphNodes.forEach((node) => {
+        if (node === graphDragging) return;
+        node.vx *= damping;
+        node.vy *= damping;
+        node.x += node.vx;
+        node.y += node.vy;
+        // Keep in bounds
+        const pad = node.radius + 4;
+        node.x = Math.max(pad, Math.min(w - pad, node.x));
+        node.y = Math.max(pad, Math.min(h - pad, node.y));
+      });
+
+      drawGraph();
+
+      if (iterations < maxIterations || graphDragging) {
+        graphAnimId = requestAnimationFrame(tick);
+      }
+    }
+    tick();
+  }
+
+  function drawGraph() {
+    const w = graphCanvas.clientWidth;
+    const h = graphCanvas.clientHeight;
+    graphCtx.clearRect(0, 0, w, h);
+
+    // Find connected nodes to hovered
+    const hoveredConnections = new Set();
+    if (graphHovered) {
+      hoveredConnections.add(graphHovered.id);
+      graphEdges.forEach((e) => {
+        if (e.source.id === graphHovered.id) hoveredConnections.add(e.target.id);
+        if (e.target.id === graphHovered.id) hoveredConnections.add(e.source.id);
+      });
+    }
+
+    // Draw edges
+    graphEdges.forEach((edge) => {
+      const isHighlighted =
+        graphHovered &&
+        (edge.source.id === graphHovered.id || edge.target.id === graphHovered.id);
+      const isDimmed = graphHovered && !isHighlighted;
+
+      graphCtx.beginPath();
+      graphCtx.moveTo(edge.source.x, edge.source.y);
+      graphCtx.lineTo(edge.target.x, edge.target.y);
+
+      if (isHighlighted) {
+        graphCtx.strokeStyle = "rgba(201,152,76,0.7)";
+        graphCtx.lineWidth = 2.5;
+      } else if (isDimmed) {
+        graphCtx.strokeStyle = "rgba(44,36,32,0.04)";
+        graphCtx.lineWidth = 1;
+      } else {
+        graphCtx.strokeStyle = "rgba(44,36,32,0.1)";
+        graphCtx.lineWidth = 1;
+      }
+      graphCtx.stroke();
+    });
+
+    // Draw nodes
+    graphNodes.forEach((node) => {
+      const isHovered = graphHovered && node.id === graphHovered.id;
+      const isConnected = hoveredConnections.has(node.id);
+      const isDimmed = graphHovered && !isConnected;
+      const color = categoryColors[node.category];
+
+      // Glow for hovered
+      if (isHovered) {
+        graphCtx.beginPath();
+        graphCtx.arc(node.x, node.y, node.radius + 6, 0, Math.PI * 2);
+        graphCtx.fillStyle = color + "20";
+        graphCtx.fill();
+      }
+
+      // Node circle
+      graphCtx.beginPath();
+      graphCtx.arc(node.x, node.y, node.radius, 0, Math.PI * 2);
+      graphCtx.fillStyle = isDimmed ? color + "30" : color;
+      graphCtx.fill();
+      graphCtx.strokeStyle = isDimmed ? "rgba(255,255,255,0.1)" : "rgba(255,255,255,0.8)";
+      graphCtx.lineWidth = 2;
+      graphCtx.stroke();
+
+      // Label
+      const fontSize = node.radius > 20 ? 11 : 9;
+      graphCtx.font = `500 ${fontSize}px 'Crimson Pro', serif`;
+      graphCtx.textAlign = "center";
+      graphCtx.textBaseline = "middle";
+      graphCtx.fillStyle = isDimmed ? "rgba(255,255,255,0.15)" : "rgba(255,255,255,0.95)";
+      graphCtx.fillText(node.name, node.x, node.y);
+    });
+  }
+
+  function getGraphNodeAt(x, y) {
+    for (let i = graphNodes.length - 1; i >= 0; i--) {
+      const n = graphNodes[i];
+      const dx = x - n.x;
+      const dy = y - n.y;
+      if (dx * dx + dy * dy <= n.radius * n.radius) return n;
+    }
+    return null;
+  }
+
+  function getCanvasPos(e) {
+    const rect = graphCanvas.getBoundingClientRect();
+    const touch = e.touches ? e.touches[0] : e;
+    return { x: touch.clientX - rect.left, y: touch.clientY - rect.top };
+  }
+
+  function bindGraphEvents() {
+    // Mouse move / hover
+    graphCanvas.addEventListener("mousemove", (e) => {
+      const pos = getCanvasPos(e);
+      const node = getGraphNodeAt(pos.x, pos.y);
+
+      if (graphDragging) {
+        graphDragMoved = true;
+        graphDragging.x = pos.x;
+        graphDragging.y = pos.y;
+        graphDragging.vx = 0;
+        graphDragging.vy = 0;
+        drawGraph();
+        return;
+      }
+
+      if (node !== graphHovered) {
+        graphHovered = node;
+        graphCanvas.style.cursor = node ? "pointer" : "default";
+
+        if (node) {
+          const connNames = [];
+          graphEdges.forEach((e) => {
+            if (e.source.id === node.id) connNames.push(e.target.name);
+            if (e.target.id === node.id) connNames.push(e.source.name);
+          });
+          graphTooltip.innerHTML = `
+            <div class="graph-tooltip-name">${node.name}</div>
+            <div class="graph-tooltip-meta">${node.book.author} · ${node.book.date}</div>
+            ${connNames.length ? `<div class="graph-tooltip-conn">Connected to: ${connNames.join(", ")}</div>` : ""}
+          `;
+          graphTooltip.classList.remove("hidden");
+          const rect = graphCanvas.getBoundingClientRect();
+          graphTooltip.style.left = Math.min(pos.x + 12, rect.width - 220) + "px";
+          graphTooltip.style.top = pos.y - 10 + "px";
+        } else {
+          graphTooltip.classList.add("hidden");
+        }
+        drawGraph();
+      }
+    });
+
+    // Mouse down — start drag
+    graphCanvas.addEventListener("mousedown", (e) => {
+      const pos = getCanvasPos(e);
+      const node = getGraphNodeAt(pos.x, pos.y);
+      if (node) {
+        graphDragging = node;
+        graphDragMoved = false;
+        startGraphSimulation();
+      }
+    });
+
+    // Mouse up — stop drag, maybe open book
+    graphCanvas.addEventListener("mouseup", (e) => {
+      if (graphDragging) {
+        const node = graphDragging;
+        const wasDrag = graphDragMoved;
+        graphDragging = null;
+        graphDragMoved = false;
+        if (!wasDrag) {
+          openBookDetail(node.book);
+        }
+        return;
+      }
+    });
+
+    // Mouse leave
+    graphCanvas.addEventListener("mouseleave", () => {
+      graphHovered = null;
+      graphTooltip.classList.add("hidden");
+      drawGraph();
+    });
+
+    // Touch support
+    graphCanvas.addEventListener("touchstart", (e) => {
+      const pos = getCanvasPos(e);
+      const node = getGraphNodeAt(pos.x, pos.y);
+      if (node) {
+        e.preventDefault();
+        graphDragging = node;
+        graphHovered = node;
+        startGraphSimulation();
+        drawGraph();
+      }
+    }, { passive: false });
+
+    graphCanvas.addEventListener("touchmove", (e) => {
+      if (graphDragging) {
+        e.preventDefault();
+        const pos = getCanvasPos(e);
+        graphDragging.x = pos.x;
+        graphDragging.y = pos.y;
+        graphDragging.vx = 0;
+        graphDragging.vy = 0;
+        drawGraph();
+      }
+    }, { passive: false });
+
+    graphCanvas.addEventListener("touchend", (e) => {
+      if (graphDragging) {
+        const node = graphDragging;
+        graphDragging = null;
+        graphHovered = null;
+        drawGraph();
+        // If it was a tap (not much movement), open detail
+        openBookDetail(node.book);
+      }
+    });
+  }
+
+  // ─── SCRIPTURE TAB ───
+  const scriptureCache = {};
+
+  // Mapping from book ID to bolls.life numeric book number
+  const bibleBookNums = {
+    matthew: 40, mark: 41, luke: 42, john: 43, acts: 44,
+    romans: 45, "1corinthians": 46, "2corinthians": 47,
+    galatians: 48, ephesians: 49, philippians: 50,
+    colossians: 51, "1thessalonians": 52, "2thessalonians": 53,
+    "1timothy": 54, "2timothy": 55, titus: 56, philemon: 57,
+    hebrews: 58, james: 59, "1peter": 60, "2peter": 61,
+    "1john": 62, "2john": 63, "3john": 64, jude: 65, revelation: 66,
+  };
+
+  function renderScriptureTab(book) {
+    const container = $("#tabScripture");
+    const bookNum = bibleBookNums[book.id];
+
+    let html = `<h3>Read ${book.name}</h3>`;
+    html += `<p class="scripture-note">New International Version · Select a chapter to read</p>`;
+    html += `<div class="chapter-grid">`;
+    for (let i = 1; i <= book.chapters; i++) {
+      html += `<button class="chapter-btn" data-chapter="${i}" data-book-num="${bookNum}">${i}</button>`;
+    }
+    html += `</div>`;
+    html += `<div class="scripture-text" id="scriptureText"></div>`;
+
+    container.innerHTML = html;
+
+    // Bind chapter buttons
+    container.querySelectorAll(".chapter-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        container.querySelectorAll(".chapter-btn").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        loadChapter(bookNum, parseInt(btn.dataset.chapter), book.name);
+      });
+    });
+  }
+
+  async function loadChapter(bookNum, chapter, bookName) {
+    const textEl = $("#scriptureText");
+    const cacheKey = `${bookNum}:${chapter}`;
+
+    if (scriptureCache[cacheKey]) {
+      renderVerses(scriptureCache[cacheKey]);
+      return;
+    }
+
+    textEl.innerHTML = `<div class="scripture-loading"><div class="typing-dots"><span></span><span></span><span></span></div></div>`;
+
+    try {
+      const ref = encodeURIComponent(`${bookName} ${chapter}`);
+      const res = await fetch(`/api/bible/${bookNum}/${chapter}?ref=${ref}`);
+      const data = await res.json();
+
+      if (data.error) {
+        textEl.innerHTML = `<p class="scripture-error">Unable to load scripture. Please try again.</p>`;
+        return;
+      }
+
+      scriptureCache[cacheKey] = data;
+      renderVerses(data);
+    } catch {
+      textEl.innerHTML = `<p class="scripture-error">Unable to connect. Please check your connection.</p>`;
+    }
+  }
+
+  function renderVerses(data) {
+    const textEl = $("#scriptureText");
+    let html = `<div class="scripture-reference">${data.reference}</div>`;
+    html += `<div class="scripture-verses">`;
+    data.verses.forEach((v) => {
+      html += `<span class="verse"><sup class="verse-num">${v.verse}</sup>${v.text} </span>`;
+    });
+    html += `</div>`;
+    textEl.innerHTML = html;
   }
 
   // ─── MAP ───

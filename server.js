@@ -94,6 +94,42 @@ ${bookContext ? `The user is currently studying: ${bookContext}` : ""}`;
   }
 });
 
+// ─── Bible text proxy (bolls.life NIV) with caching ───
+const bibleCache = new Map();
+
+app.get("/api/bible/:bookNum/:chapter", requireAuth, async (req, res) => {
+  const { bookNum, chapter } = req.params;
+  const cacheKey = `${bookNum}:${chapter}`;
+
+  if (bibleCache.has(cacheKey)) {
+    return res.json(bibleCache.get(cacheKey));
+  }
+
+  try {
+    const url = `https://bolls.life/get-chapter/NIV/${bookNum}/${chapter}/`;
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      return res.status(response.status).json({ error: "Failed to fetch scripture" });
+    }
+
+    const data = await response.json();
+    const result = {
+      reference: req.query.ref || `Chapter ${chapter}`,
+      verses: data.map((v) => ({
+        verse: v.verse,
+        text: v.text.replace(/^[^<]*<br\s*\/?>/i, "").replace(/<[^>]*>/g, "").trim(),
+      })),
+    };
+
+    bibleCache.set(cacheKey, result);
+    res.json(result);
+  } catch (error) {
+    console.error("Bible API Error:", error.message);
+    res.status(500).json({ error: "Failed to fetch scripture text" });
+  }
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`\n  ✦ NT Study Companion running at http://localhost:${PORT}\n`);
