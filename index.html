@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Living Word — New Testament Study Companion</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500&family=Crimson+Pro:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Cinzel:wght@400;500;600;700&family=Cinzel+Decorative:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <!-- ═══════════ LOGIN SCREEN ═══════════ -->
+  <div id="loginScreen" class="login-screen">
+    <div class="landing-grain"></div>
+    <div class="login-container">
+      <div class="landing-ornament top">✦</div>
+      <h1 class="login-title">The Living Word</h1>
+      <p class="login-subtitle">Enter password to continue</p>
+      <form id="loginForm" class="login-form">
+        <input type="password" id="loginPassword" class="login-input" placeholder="Password" autocomplete="current-password" required>
+        <button type="submit" class="login-btn">Enter</button>
+        <p id="loginError" class="login-error hidden">Incorrect password. Please try again.</p>
+      </form>
+      <div class="landing-ornament bottom">✦</div>
+    </div>
+  </div>
+
+  <!-- ═══════════ OPENING SCREEN ═══════════ -->
+  <div id="landing" class="landing">
+    <div class="landing-grain"></div>
+    <div class="landing-cross"></div>
+    <div class="landing-content">
+      <div class="landing-ornament top">✦</div>
+      <h1 class="landing-title">The Living Word</h1>
+      <p class="landing-subtitle">A New Testament Study Companion</p>
+      <div class="landing-divider">
+        <span class="divider-line"></span>
+        <span class="divider-icon">☩</span>
+        <span class="divider-line"></span>
+      </div>
+      <p class="landing-verse">"Your word is a lamp to my feet<br>and a light to my path."</p>
+      <p class="landing-ref">— Psalm 119:105</p>
+      <button id="enterBtn" class="landing-btn">Begin Your Study</button>
+      <div class="landing-ornament bottom">✦</div>
+    </div>
+  </div>
+
+  <!-- ═══════════ MAIN APPLICATION ═══════════ -->
+  <div id="app" class="app hidden">
+
+    <!-- Top Navigation -->
+    <nav class="top-nav">
+      <div class="nav-left">
+        <button id="navHome" class="nav-brand" title="Home">
+          <span class="brand-icon">☩</span>
+          <span class="brand-text">The Living Word</span>
+        </button>
+      </div>
+      <div class="nav-center">
+        <button class="nav-tab active" data-view="books">Books</button>
+        <button class="nav-tab" data-view="timeline">Timeline</button>
+        <button class="nav-tab" data-view="map">Map</button>
+        <button class="nav-tab" data-view="scholar">Ask the Scholar</button>
+      </div>
+      <div class="nav-right">
+        <div class="search-container">
+          <input type="text" id="searchInput" class="search-input" placeholder="Search books...">
+          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        </div>
+      </div>
+    </nav>
+
+    <!-- ═══════════ BOOKS VIEW ═══════════ -->
+    <section id="booksView" class="view active">
+      <div class="books-hero">
+        <h2 class="section-title">The New Testament</h2>
+        <p class="section-desc">27 books. One story of redemption. Select a book to explore its background, author, and historical context.</p>
+      </div>
+
+      <!-- Category: Gospels -->
+      <div class="book-category" data-category="gospels">
+        <div class="category-header">
+          <div class="category-line"></div>
+          <h3 class="category-title">The Gospels</h3>
+          <p class="category-desc">Four accounts of the life, death, and resurrection of Jesus Christ</p>
+        </div>
+        <div class="book-grid" id="gospelsGrid"></div>
+      </div>
+
+      <!-- Category: History -->
+      <div class="book-category" data-category="history">
+        <div class="category-header">
+          <div class="category-line"></div>
+          <h3 class="category-title">History</h3>
+          <p class="category-desc">The birth and spread of the early Church</p>
+        </div>
+        <div class="book-grid" id="historyGrid"></div>
+      </div>
+
+      <!-- Category: Pauline Epistles -->
+      <div class="book-category" data-category="pauline">
+        <div class="category-header">
+          <div class="category-line"></div>
+          <h3 class="category-title">Pauline Epistles</h3>
+          <p class="category-desc">Letters from the Apostle Paul to churches and individuals</p>
+        </div>
+        <div class="book-grid" id="paulineGrid"></div>
+      </div>
+
+      <!-- Category: General Epistles -->
+      <div class="book-category" data-category="general">
+        <div class="category-header">
+          <div class="category-line"></div>
+          <h3 class="category-title">General Epistles</h3>
+          <p class="category-desc">Letters from other apostles to the wider Church</p>
+        </div>
+        <div class="book-grid" id="generalGrid"></div>
+      </div>
+
+      <!-- Category: Prophecy -->
+      <div class="book-category" data-category="prophecy">
+        <div class="category-header">
+          <div class="category-line"></div>
+          <h3 class="category-title">Prophecy</h3>
+          <p class="category-desc">The revelation of things to come</p>
+        </div>
+        <div class="book-grid" id="prophecyGrid"></div>
+      </div>
+    </section>
+
+    <!-- ═══════════ TIMELINE VIEW ═══════════ -->
+    <section id="timelineView" class="view">
+      <div class="books-hero">
+        <h2 class="section-title">Timeline of the New Testament</h2>
+        <p class="section-desc">When each book was written, from the earliest letters to the final revelation</p>
+      </div>
+      <div class="timeline-container" id="timelineContainer"></div>
+      <div class="timeline-legend">
+        <span class="legend-item"><span class="legend-dot" style="background:var(--clr-gospel)"></span> Gospels</span>
+        <span class="legend-item"><span class="legend-dot" style="background:var(--clr-history)"></span> History</span>
+        <span class="legend-item"><span class="legend-dot" style="background:var(--clr-pauline)"></span> Pauline Epistles</span>
+        <span class="legend-item"><span class="legend-dot" style="background:var(--clr-general)"></span> General Epistles</span>
+        <span class="legend-item"><span class="legend-dot" style="background:var(--clr-prophecy)"></span> Prophecy</span>
+      </div>
+    </section>
+
+    <!-- ═══════════ MAP VIEW ═══════════ -->
+    <section id="mapView" class="view">
+      <div class="books-hero">
+        <h2 class="section-title">Where They Wrote</h2>
+        <p class="section-desc">The cities and regions from which the New Testament books were composed</p>
+      </div>
+      <div class="map-container" id="mapContainer">
+        <svg id="mapSvg" viewBox="0 0 1000 600" class="map-svg"></svg>
+        <div id="mapTooltip" class="map-tooltip hidden"></div>
+      </div>
+    </section>
+
+    <!-- ═══════════ SCHOLAR VIEW ═══════════ -->
+    <section id="scholarView" class="view">
+      <div class="scholar-container">
+        <div class="scholar-header">
+          <div class="scholar-icon">📜</div>
+          <h2 class="section-title">Ask the Scholar</h2>
+          <p class="section-desc">Have a question about a New Testament book? Ask and receive detailed, historically-informed answers.</p>
+        </div>
+        <div class="scholar-suggestions" id="scholarSuggestions">
+          <button class="suggestion-chip" data-q="What was daily life like in first-century Corinth?">Life in Corinth</button>
+          <button class="suggestion-chip" data-q="Why did Paul write so many letters from prison?">Paul's Prison Letters</button>
+          <button class="suggestion-chip" data-q="What is the relationship between the Gospels of Matthew, Mark, and Luke?">The Synoptic Problem</button>
+          <button class="suggestion-chip" data-q="Who was the audience for the book of Hebrews and why does it matter?">Audience of Hebrews</button>
+          <button class="suggestion-chip" data-q="What was the historical context of the early church persecution described in Acts?">Early Church Persecution</button>
+          <button class="suggestion-chip" data-q="How did the Roman Empire influence the writing of the New Testament?">Rome's Influence</button>
+        </div>
+        <div class="chat-messages" id="chatMessages">
+          <div class="chat-welcome">
+            <p>Welcome! I'm here to help you understand the rich historical and cultural context behind the New Testament. Ask me anything about the books, authors, cities, or world of the early Church.</p>
+          </div>
+        </div>
+        <div class="chat-input-area">
+          <textarea id="chatInput" class="chat-input" placeholder="Ask about any New Testament book, author, or topic..." rows="1"></textarea>
+          <button id="chatSend" class="chat-send" title="Send">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════ BOOK DETAIL PANEL ═══════════ -->
+    <div id="bookDetail" class="book-detail hidden">
+      <div class="detail-overlay" id="detailOverlay"></div>
+      <div class="detail-panel">
+        <button class="detail-close" id="detailClose">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>
+        </button>
+
+        <div class="detail-hero" id="detailHero">
+          <div class="detail-hero-bg"></div>
+          <div class="detail-hero-content">
+            <span class="detail-category-badge" id="detailBadge"></span>
+            <h2 class="detail-title" id="detailTitle"></h2>
+            <div class="detail-meta">
+              <div class="meta-item">
+                <span class="meta-label">Author</span>
+                <span class="meta-value" id="detailAuthor"></span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">Date</span>
+                <span class="meta-value" id="detailDate"></span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">Written From</span>
+                <span class="meta-value" id="detailLocation"></span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">Written To</span>
+                <span class="meta-value" id="detailAudience"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="detail-tabs">
+          <button class="detail-tab active" data-tab="overview">Overview</button>
+          <button class="detail-tab" data-tab="context">Historical Context</button>
+          <button class="detail-tab" data-tab="author">About the Author</button>
+          <button class="detail-tab" data-tab="themes">Key Themes</button>
+          <button class="detail-tab" data-tab="outline">Outline</button>
+        </div>
+
+        <div class="detail-body">
+          <div class="tab-content active" id="tabOverview"></div>
+          <div class="tab-content" id="tabContext"></div>
+          <div class="tab-content" id="tabAuthor"></div>
+          <div class="tab-content" id="tabThemes"></div>
+          <div class="tab-content" id="tabOutline"></div>
+        </div>
+
+        <div class="detail-footer">
+          <button class="detail-ask-btn" id="detailAskBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+            Ask the Scholar about this book
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="js/data.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

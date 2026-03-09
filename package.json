@@ -1,0 +1,16 @@
+{
+  "name": "nt-study-companion",
+  "version": "1.0.0",
+  "description": "New Testament Study Companion — beautiful biblical context and background for every book",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "cookie": "^1.0.2",
+    "express": "^4.21.0"
+  }
+}
