@@ -1,14 +1,18 @@
 export default function handler(req, res) {
   try {
     if (req.method !== 'POST') {
-      return res.status(405).json({ error: 'Method not allowed' });
+      res.setHeader('Content-Type', 'application/json');
+      res.status(405);
+      return res.end(JSON.stringify({ error: 'Method not allowed' }));
     }
 
     const { password } = req.body || {};
     const validPassword = process.env.APP_PASSWORD;
 
     if (!password) {
-      return res.status(400).json({ error: 'Password required' });
+      res.setHeader('Content-Type', 'application/json');
+      res.status(400);
+      return res.end(JSON.stringify({ error: 'Password required' }));
     }
 
     if (password === validPassword) {
@@ -17,12 +21,18 @@ export default function handler(req, res) {
       const loginCookie = `logged_in=1; SameSite=Lax; Path=/; Max-Age=${maxAge}; Secure`;
 
       res.setHeader('Set-Cookie', [authCookie, loginCookie]);
-      return res.status(200).json({ success: true });
+      res.setHeader('Content-Type', 'application/json');
+      res.status(200);
+      return res.end(JSON.stringify({ success: true }));
     }
 
-    return res.status(401).json({ error: 'Invalid password' });
+    res.setHeader('Content-Type', 'application/json');
+    res.status(401);
+    return res.end(JSON.stringify({ error: 'Invalid password' }));
   } catch (err) {
     console.error('Auth error:', err);
-    return res.status(500).json({ error: err.message });
+    res.setHeader('Content-Type', 'application/json');
+    res.status(500);
+    return res.end(JSON.stringify({ error: err.message }));
   }
 }
